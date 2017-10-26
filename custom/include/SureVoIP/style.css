@@ -1,0 +1,46 @@
+body {margin-top: 0px;margin-left: 0px;}
+
+
+#page {position:relative;}
+#page #title_1 {border:none;margin: 10px 0px 0px 0px;padding: 0px;border:none;width: 688px;overflow: hidden;}
+#page #title_2 {border:none;margin: 10px 0px 0px 0px;padding: 0px;border:none;width: 571px;overflow: hidden;}
+
+#page #pg0imglogo {position:absolute;top:0px;left:0px;margin: 0px 0px 0px 0px;padding: 0px;z-index:-1;width:712px;height:131px;}
+
+.dclr {clear:both;float:none;height:10px;margin:0px;padding:0px;overflow:hidden;}
+
+.ft0{font: bold 53px arial, sans-serif;color: #4e8dd2;line-height: 62px;}
+.ft1{font: 27px arial, sans-serif;color: #f99d46;line-height: 32px;}
+.ft2{font: bold 27px arial, sans-serif;color: #f99d46;line-height: 32px;}
+.ft3{font: bold 8px arial, sans-serif;color: #4e8dd2;line-height: 12px;}
+.ft4{font: bold 8px arial, sans-serif;color: #f99d46;line-height: 12px;}
+
+.p0{text-align: left;margin-top: 0px;margin-bottom: 0px;}
+.p1{text-align: left;padding-left: 70px;margin-top: 0px;margin-bottom: 0px;}
+.p2{text-align: left;margin-top: 1px;margin-bottom: 0px;}
+
+.table {width:90%;alignment:center;border: 8px solid #4e8dd2;border-collapse: collapse}
+.t-header {background-color: #4e8dd2;border: 1px solid white;font: bold 12px arial, sans-serif;color: white;}
+.t-body {font: 12px arial, sans-serif;border-left: 1px solid #4e8dd2;border-right: 1px solid #4e8dd2;}
+
+#footer {position:relative;vertical-align: bottom}
+
+.p12{text-align: left;margin-top: 0px;margin-bottom: 0px;white-space: nowrap;}
+.p14{text-align: right;padding-left: 35px;margin-top: 0px;margin-bottom: 0px;white-space: nowrap;}
+
+.ft16{font: bold 8px 'Arial';color: #4e8dd2;line-height: 10px;}
+.ft17{font: bold 8px 'Arial';color: #58235b;line-height: 10px;}
+.ft18{font: bold 8px 'Arial';color: #f99d46;line-height: 10px;}
+.ft19{font: 1px 'Arial';line-height: 6px;}
+.ft20{font: 1px 'Arial';line-height: 7px;}
+
+.td3{padding: 0px;margin: 0px;width: 242px;vertical-align: bottom;}
+.td4{border-bottom: #437ab9 1px solid;padding: 0px;margin: 0px;width: 339px;vertical-align: bottom;}
+.td5{padding: 0px;margin: 0px;vertical-align: bottom;}
+.td6{padding: 0px;margin: 0px;width: 339px;vertical-align: bottom;}
+
+.tr3{height: 14px;}
+.tr4{height: 6px;}
+.tr5{height: 7px;}
+
+.t1{width: 644px;font: bold 8px 'Arial';color: #437ab9;}
