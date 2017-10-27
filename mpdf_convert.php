@@ -5,8 +5,6 @@ require_once('modules/AOS_PDF_Templates/PDF_Lib/mpdf.php');
 $mpdf = new mPDF();
 $mpdf->tMargin = 0;
 //$stylesheet = file_get_contents('custom/include/SureVoIP/style.css');
-//$pdf->SetImportUse();
-//$pageCount = $mpdf->SetSourceFile('custom/include/SureVoIP/SureVoIP_Info-Pack-2017.pdf');
 $html = '
 <!DOCTYPE html>
 <html lang="en">
@@ -54,7 +52,16 @@ $htmlFooter = '
 </div>
 </footer>
 ';
-$mpdf->SetHTMLFooter($htmlFooter);
+
+$mpdf->SetImportUse();
+$pageCount = $mpdf->SetSourceFile('custom/include/SureVoIP/SureVoIP_Info-Pack-2017.pdf');
+for($i = 1; $i <= $pageCount; $i++) {
+    $mpdf->AddPage();
+    $tpl = $mpdf->ImportPage($i);
+    $mpdf->UseTemplate($tpl);
+}
 //$mpdf->WriteHTML($stylesheet,1);
+$mpdf->AddPage();
 $mpdf->WriteHTML($html,2);
+$mpdf->SetHTMLFooter($htmlFooter);
 $mpdf->Output();
