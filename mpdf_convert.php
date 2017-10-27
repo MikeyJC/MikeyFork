@@ -57,11 +57,14 @@ $mpdf->SetImportUse();
 $pageCount = $mpdf->SetSourceFile('custom/include/SureVoIP/SureVoIP_Info-Pack-2017.pdf');
 for($i = 1; $i <= $pageCount; $i++) {
     $mpdf->AddPage();
+    $mpdf->SetHTMLFooter("");
     $tpl = $mpdf->ImportPage($i);
     $mpdf->UseTemplate($tpl);
+    if($i == 7) {
+        $mpdf->AddPage();
+        $mpdf->WriteHTML($html,2);
+        $mpdf->SetHTMLFooter($htmlFooter);
+    }
 }
 //$mpdf->WriteHTML($stylesheet,1);
-$mpdf->AddPage();
-$mpdf->WriteHTML($html,2);
-$mpdf->SetHTMLFooter($htmlFooter);
 $mpdf->Output();
