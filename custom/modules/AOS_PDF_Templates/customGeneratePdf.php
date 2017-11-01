@@ -128,6 +128,8 @@ $text = str_replace("\$total_amount", "\$" . $variableName . "_total_amount", $t
 
 $text = populate_group_lines($text, $lineItemsGroups, $lineItems);
 
+$footer = str_replace("\$page_number", $template->page_number, $footer);
+
 $converted = templateParser::parse_template($text, $object_arr);
 $header = templateParser::parse_template($header, $object_arr);
 $footer = templateParser::parse_template($footer, $object_arr);
@@ -142,24 +144,32 @@ if ($task == 'pdf' || $task == 'emailpdf') {
         $orientation = ($template->orientation == "Landscape") ? "-L" : "";
         $pdf = new mPDF('en', $template->page_size . $orientation, '', 'DejaVuSansCondensed', $template->margin_left, $template->margin_right, $template->margin_top, $template->margin_bottom, $template->margin_header, $template->margin_footer);
         $pdf->SetAutoFont();
-        $pdf->SetImportUse();
-        $pageCount = $pdf->SetSourceFile('custom/include/SureVoIP/SureVoIP_Info-Pack-2017.pdf');
-        for($i = 1; $i <= $pageCount; $i++) {
-            $pdf->SetHTMLHeader("");
-            $pdf->AddPage();
-            $pdf->SetHTMLFooter("");
-            $tpl = $pdf->ImportPage($i);
-            $pdf->UseTemplate($tpl);
-            if($i == 7) {
+        if(!empty($template->documents_aos_pdf_templates_1documents_ida) && !empty($template->page_number)){
+            $pdf->SetImportUse();
+            $document = BeanFactory::getBean('Documents', $template->documents_aos_pdf_templates_1documents_ida);
+            $sourceFile = "upload/".$document->document_revision_id;
+            $tempFile = $sourceFile.".pdf";
+            copy($sourceFile, $tempFile);
+            $pageCount = $pdf->SetSourceFile($tempFile);
+            for($i = 1; $i <= $pageCount; $i++) {
+                $pdf->SetHTMLHeader("");
                 $pdf->AddPage();
-                $pdf->SetHTMLHeader($header);
-                $pdf->WriteHTML($printable,2);
-                $pdf->SetHTMLFooter($footer);
+                $pdf->SetHTMLFooter("");
+                $tpl = $pdf->ImportPage($i);
+                $pdf->UseTemplate($tpl);
+                if($i == $template->page_number) {
+                    $pdf->AddPage();
+                    $pdf->SetHTMLHeader($header);
+                    $pdf->WriteHTML($printable,2);
+                    $pdf->SetHTMLFooter($footer);
+                }
             }
+            unlink($tempFile);
+        } else {
+            $pdf->SetHTMLHeader($header);
+            $pdf->SetHTMLFooter($footer);
+            $pdf->WriteHTML($printable);
         }
-//        $pdf->SetHTMLHeader($header);
-//        $pdf->SetHTMLFooter($footer);
-//        $pdf->WriteHTML($printable);
         if ($task == 'pdf') {
             $pdf->Output($file_name, "D");
         } else {
