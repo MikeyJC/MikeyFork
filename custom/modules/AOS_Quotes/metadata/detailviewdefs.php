@@ -20,13 +20,13 @@ array (
             'customCode' => '<input type="button" class="button" onClick="showPopup(\'pdf\');" value="{$MOD.LBL_PRINT_AS_PDF}">',
           ),
           5 =>
-              array (
-                  'customCode' => '<input type="button" class="button" onClick="showPopupCustom(\'pdf\');" value="{$MOD.LBL_INSERT_INTO_PDF}">',
-              ),
+          array (
+            'customCode' => '<input type="button" class="button" onClick="showPopupCustom(\'pdf\');" value="{$MOD.LBL_INSERT_INTO_PDF}">',
+          ),
           6 =>
-              array (
-                  'customCode' => '<input type="button" class="button" onClick="showPopupCustom(\'emailpdf\');" value="{$MOD.LBL_INSERT_INTO_PDF_EMAIL}">',
-              ),
+          array (
+            'customCode' => '<input type="button" class="button" onClick="showPopupCustom(\'emailpdf\');" value="{$MOD.LBL_INSERT_INTO_PDF_EMAIL}">',
+          ),
           7 =>
           array (
             'customCode' => '<input type="button" class="button" onClick="showPopup(\'emailpdf\');" value="{$MOD.LBL_EMAIL_PDF}">',

@@ -25,9 +25,13 @@ array (
           ),
           6 =>
           array (
-            'customCode' => '<input type="button" class="button" onClick="showPopup(\'emailpdf\');" value="{$MOD.LBL_EMAIL_PDF}">',
+            'customCode' => '<input type="button" class="button" onClick="showPopupCustom(\'emailpdf\');" value="{$MOD.LBL_INSERT_INTO_PDF_EMAIL}">',
           ),
           7 =>
+          array (
+            'customCode' => '<input type="button" class="button" onClick="showPopup(\'emailpdf\');" value="{$MOD.LBL_EMAIL_PDF}">',
+          ),
+          8 =>
           array (
             'customCode' => '<input type="button" class="button" onClick="showPopup(\'email\');" value="{$MOD.LBL_EMAIL_INVOICE}">',
           ),
