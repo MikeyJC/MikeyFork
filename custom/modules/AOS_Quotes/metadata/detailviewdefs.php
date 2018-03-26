@@ -24,14 +24,18 @@ array (
                   'customCode' => '<input type="button" class="button" onClick="showPopupCustom(\'pdf\');" value="{$MOD.LBL_INSERT_INTO_PDF}">',
               ),
           6 =>
+              array (
+                  'customCode' => '<input type="button" class="button" onClick="showPopupCustom(\'emailpdf\');" value="{$MOD.LBL_INSERT_INTO_PDF_EMAIL}">',
+              ),
+          7 =>
           array (
             'customCode' => '<input type="button" class="button" onClick="showPopup(\'emailpdf\');" value="{$MOD.LBL_EMAIL_PDF}">',
           ),
-          7 =>
+          8 =>
           array (
             'customCode' => '<input type="button" class="button" onClick="showPopup(\'email\');return false;" value="{$MOD.LBL_EMAIL_QUOTE}">',
           ),
-          8 =>
+          9 =>
           array (
             'customCode' => '<input type="submit" class="button" onClick="this.form.action.value=\'createOpportunity\';" value="{$MOD.LBL_CREATE_OPPORTUNITY}">',
             'sugar_html' => 
@@ -48,7 +52,7 @@ array (
               ),
             ),
           ),
-          9 =>
+          10 =>
           array (
             'customCode' => '<input type="submit" class="button" onClick="this.form.action.value=\'createContract\';" value="{$MOD.LBL_CREATE_CONTRACT}">',
             'sugar_html' => 
@@ -65,7 +69,7 @@ array (
               ),
             ),
           ),
-          10 =>
+          11 =>
           array (
             'customCode' => '<input type="submit" class="button" onClick="this.form.action.value=\'converToInvoice\';" value="{$MOD.LBL_CONVERT_TO_INVOICE}">',
             'sugar_html' => 
