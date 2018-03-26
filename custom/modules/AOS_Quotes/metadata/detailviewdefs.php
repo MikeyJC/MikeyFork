@@ -20,25 +20,29 @@ array (
             'customCode' => '<input type="button" class="button" onClick="showPopup(\'pdf\');" value="{$MOD.LBL_PRINT_AS_PDF}">',
           ),
           5 =>
-              array (
-                  'customCode' => '<input type="button" class="button" onClick="showPopupCustom(\'pdf\');" value="{$MOD.LBL_INSERT_INTO_PDF}">',
-              ),
+          array (
+            'customCode' => '<input type="button" class="button" onClick="showPopupCustom(\'pdf\');" value="{$MOD.LBL_INSERT_INTO_PDF}">',
+          ),
           6 =>
           array (
-            'customCode' => '<input type="button" class="button" onClick="showPopup(\'emailpdf\');" value="{$MOD.LBL_EMAIL_PDF}">',
+            'customCode' => '<input type="button" class="button" onClick="showPopupCustom(\'emailpdf\');" value="{$MOD.LBL_INSERT_INTO_PDF_EMAIL}">',
           ),
           7 =>
           array (
-            'customCode' => '<input type="button" class="button" onClick="showPopup(\'email\');return false;" value="{$MOD.LBL_EMAIL_QUOTE}">',
+            'customCode' => '<input type="button" class="button" onClick="showPopup(\'emailpdf\');" value="{$MOD.LBL_EMAIL_PDF}">',
           ),
           8 =>
           array (
+            'customCode' => '<input type="button" class="button" onClick="showPopup(\'email\');return false;" value="{$MOD.LBL_EMAIL_QUOTE}">',
+          ),
+          9 =>
+          array (
             'customCode' => '<input type="submit" class="button" onClick="this.form.action.value=\'createOpportunity\';" value="{$MOD.LBL_CREATE_OPPORTUNITY}">',
-            'sugar_html' => 
+            'sugar_html' =>
             array (
               'type' => 'submit',
               'value' => '{$MOD.LBL_CREATE_OPPORTUNITY}',
-              'htmlOptions' => 
+              'htmlOptions' =>
               array (
                 'class' => 'button',
                 'id' => 'create_contract_button',
@@ -48,14 +52,14 @@ array (
               ),
             ),
           ),
-          9 =>
+          10 =>
           array (
             'customCode' => '<input type="submit" class="button" onClick="this.form.action.value=\'createContract\';" value="{$MOD.LBL_CREATE_CONTRACT}">',
-            'sugar_html' => 
+            'sugar_html' =>
             array (
               'type' => 'submit',
               'value' => '{$MOD.LBL_CREATE_CONTRACT}',
-              'htmlOptions' => 
+              'htmlOptions' =>
               array (
                 'class' => 'button',
                 'id' => 'create_contract_button',
@@ -65,14 +69,14 @@ array (
               ),
             ),
           ),
-          10 =>
+          11 =>
           array (
             'customCode' => '<input type="submit" class="button" onClick="this.form.action.value=\'converToInvoice\';" value="{$MOD.LBL_CONVERT_TO_INVOICE}">',
-            'sugar_html' => 
+            'sugar_html' =>
             array (
               'type' => 'submit',
               'value' => '{$MOD.LBL_CONVERT_TO_INVOICE}',
-              'htmlOptions' => 
+              'htmlOptions' =>
               array (
                 'class' => 'button',
                 'id' => 'convert_to_invoice_button',
@@ -85,21 +89,21 @@ array (
         ),
       ),
       'maxColumns' => '2',
-      'widths' => 
+      'widths' =>
       array (
-        0 => 
+        0 =>
         array (
           'label' => '10',
           'field' => '30',
         ),
-        1 => 
+        1 =>
         array (
           'label' => '10',
           'field' => '30',
         ),
       ),
       'useTabs' => true,
-      'tabDefs' => 
+      'tabDefs' =>
       array (
         'LBL_PANEL_OVERVIEW' =>
         array (
@@ -111,7 +115,7 @@ array (
           'newTab' => true,
           'panelDefault' => 'expanded',
         ),
-        'LBL_LINE_ITEMS' => 
+        'LBL_LINE_ITEMS' =>
         array (
           'newTab' => true,
           'panelDefault' => 'expanded',
@@ -123,70 +127,70 @@ array (
           ),
       ),
     ),
-    'panels' => 
+    'panels' =>
     array (
       'LBL_PANEL_OVERVIEW' =>
       array (
-        0 => 
+        0 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'name',
             'label' => 'LBL_NAME',
           ),
-          1 => 
+          1 =>
           array (
             'name' => 'opportunity',
             'label' => 'LBL_OPPORTUNITY',
           ),
         ),
-        1 => 
+        1 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'number',
             'label' => 'LBL_QUOTE_NUMBER',
           ),
-          1 => 
+          1 =>
           array (
             'name' => 'stage',
             'label' => 'LBL_STAGE',
           ),
         ),
-        2 => 
+        2 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'expiration',
             'label' => 'LBL_EXPIRATION',
           ),
-          1 => 
+          1 =>
           array (
             'name' => 'invoice_status',
             'label' => 'LBL_INVOICE_STATUS',
           ),
         ),
-        3 => 
+        3 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'assigned_user_name',
             'label' => 'LBL_ASSIGNED_TO',
           ),
-          1 => 
+          1 =>
           array (
             'name' => 'term',
             'label' => 'LBL_TERM',
           ),
         ),
-        4 => 
+        4 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'approval_status',
             'label' => 'LBL_APPROVAL_STATUS',
           ),
-          1 => 
+          1 =>
           array (
             'name' => 'approval_issue',
             'label' => 'LBL_APPROVAL_ISSUE',
@@ -195,44 +199,44 @@ array (
       ),
       'LBL_QUOTE_TO' =>
       array (
-        0 => 
+        0 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'billing_account',
             'label' => 'LBL_BILLING_ACCOUNT',
           ),
-          1 => 
+          1 =>
           array (
             'name' => 'billing_contact',
             'label' => 'LBL_BILLING_CONTACT',
           ),
         ),
-        1 => 
+        1 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'billing_address_street',
             'label' => 'LBL_BILLING_ADDRESS',
             'type' => 'address',
-            'displayParams' => 
+            'displayParams' =>
             array (
               'key' => 'billing',
             ),
           ),
-          1 => 
+          1 =>
           array (
             'name' => 'shipping_address_street',
             'label' => 'LBL_SHIPPING_ADDRESS',
             'type' => 'address',
-            'displayParams' => 
+            'displayParams' =>
             array (
               'key' => 'shipping',
             ),
           ),
         ),
       ),
-      'lbl_line_items' => 
+      'lbl_line_items' =>
       array (
         0 =>
         array (
@@ -246,7 +250,7 @@ array (
           ),
         1 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'line_items',
             'label' => 'LBL_LINE_ITEMS',
@@ -254,7 +258,7 @@ array (
         ),
         2 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'total_amt',
             'label' => 'LBL_TOTAL_AMT',
@@ -262,7 +266,7 @@ array (
         ),
         3 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'discount_amount',
             'label' => 'LBL_DISCOUNT_AMOUNT',
@@ -270,7 +274,7 @@ array (
         ),
         4 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'subtotal_amount',
             'label' => 'LBL_SUBTOTAL_AMOUNT',
@@ -278,7 +282,7 @@ array (
         ),
         5 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'shipping_amount',
             'label' => 'LBL_SHIPPING_AMOUNT',
@@ -286,7 +290,7 @@ array (
         ),
         6 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'shipping_tax_amt',
             'label' => 'LBL_SHIPPING_TAX_AMT',
@@ -294,7 +298,7 @@ array (
         ),
         7 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'tax_amount',
             'label' => 'LBL_TAX_AMOUNT',
@@ -302,7 +306,7 @@ array (
         ),
         8 =>
         array (
-          0 => 
+          0 =>
           array (
             'name' => 'total_amount',
             'label' => 'LBL_GRAND_TOTAL',
