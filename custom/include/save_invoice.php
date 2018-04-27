@@ -2,7 +2,14 @@
 require_once('include/entryPoint.php');
 require_once('modules/AOS_Invoices/AOS_Invoices.php');
 
-$invoice = new AOS_Invoices();
-$invoice->retrieve('487f6316-6b0a-860f-5016-5acf2ae82074');
-$invoice->save();
+global $db;
+
+$date_start = $_REQUEST['date_start'];
+$sql = "SELECT id FROM aos_invoices WHERE invoice_date >= '".$date_start."' AND deleted = '0'";
+$result = $db->query($sql);
+while ($row = $db->fetchByAssoc($result)) {
+    $invoice = new AOS_Invoices();
+    $invoice->retrieve($row['id']);
+    $invoice->save();
+}
 echo "test";
