@@ -28,4 +28,9 @@ if (!isset($hook_array) || !is_array($hook_array)) {
 if (!isset($hook_array['after_save']) || !is_array($hook_array['after_save'])) {
     $hook_array['after_save'] = array();
 }
+if (!isset($hook_array['before_save']) || !is_array($hook_array['before_save'])) {
+    $hook_array['before_save'] = array();
+}
 $hook_array['after_save'][] = Array(19, 'Add or Update Invoices', 'custom/modules/AOS_Invoices/Kashflow_Invoices.php','Kashflow_Invoices', 'addOrUpdateInvoice');
+$hook_array['before_save'][] = Array(19, 'Run Total Calculations', 'custom/modules/AOS_Invoices/Kashflow_Invoices.php','Kashflow_Invoices', 'calculateTotals');
+$hook_array['after_save'][] = Array(20, 'Fix Groups', 'custom/modules/AOS_Invoices/Kashflow_Invoices.php','Kashflow_Invoices', 'makeGroup');

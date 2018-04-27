@@ -144,4 +144,110 @@ class Kashflow_Invoices {
             if($response->Status == "NO") SugarApplication::appendErrorMessage($app_strings['LBL_FAILED_KASHFLOW_INVOICES']);
         }
     }
+
+    function calculateTotals($bean){
+
+        if(empty($bean->total_amt) || $bean->total_amt == "") {
+            $sql = "SELECT pg.id, pg.group_id FROM aos_products_quotes pg LEFT JOIN aos_line_item_groups lig ON pg.group_id = lig.id WHERE pg.parent_type = '".$bean->object_name."' AND pg.parent_id = '".$bean->id."' AND pg.deleted = 0 ORDER BY lig.number ASC, pg.number ASC";
+            $result = $bean->db->query($sql);
+            $tot_amt = 0;
+            $dis_tot = 0;
+            $tax = 0;
+
+            while ($row = $bean->db->fetchByAssoc($result)) {
+                $line_item = new AOS_Products_Quotes();
+                $line_item->retrieve($row['id']);
+                $qty = $line_item->product_qty;
+                $list_price = $line_item->product_list_price;
+                $unit_price = $line_item->product_unit_price;
+                $discount_amount = $line_item->product_discount_amount;
+                $vat_amt = $line_item->vat_amt;
+                $deleted = $line_item->deleted;
+
+                if ($qty !== 0 && $list_price !== null && $deleted != 1) {
+                    $tot_amt += $list_price * $qty;
+                } else if ($qty !== 0 && $unit_price !== 0 && $deleted != 1) {
+                    $tot_amt += $unit_price * $qty;
+                }
+                if ($discount_amount !== 0 && $deleted != 1) {
+                    $dis_tot += $discount_amount * $qty;
+                }
+                if ($vat_amt !== 0 && $deleted != 1) {
+                    $tax += $vat_amt;
+                }
+            }
+            $subtotal = $tot_amt + $dis_tot;
+
+            $bean->total_amt = $tot_amt;
+            $bean->discount_amount = $dis_tot;
+            $bean->subtotal_amount = $subtotal;
+
+            $shipping = $bean->shipping_amount;
+
+            $shippingtax = $bean->shipping_tax;
+
+            $shippingtax_amt = $shipping * ($shippingtax/100);
+
+            $bean->shipping_tax_amt = $shippingtax_amt;
+
+            $tax += $shippingtax_amt;
+
+            $bean->tax_amount = $tax;
+
+            $bean->subtotal_tax_amount = $subtotal + $tax;
+            $bean->total_amount = $subtotal + $tax + $shipping;
+        }
+    }
+
+    function makeGroup($bean) {
+        $sql = "SELECT id FROM aos_line_item_groups WHERE parent_id = '".$bean->id."' AND deleted = '0'";
+        $result = $bean->db->query($sql);
+        $row = $bean->db->fetchByAssoc($result);
+        if(empty($row['id'])) {
+            $group = new AOS_Line_Item_Groups();
+            $group->number = 1;
+            $group->assigned_user_id = $bean->assigned_user_id;
+            $group->currency_id = $bean->currency_id;
+            $group->parent_id = $bean->id;
+            $group->parent_type = $bean->object_name;
+            $sql = "SELECT pg.id FROM aos_products_quotes pg WHERE pg.parent_type = '".$bean->object_name."' AND pg.parent_id = '".$bean->id."' AND pg.deleted = 0 ORDER BY pg.number ASC";
+            $result = $bean->db->query($sql);
+            $tot_amt = 0;
+            $dis_tot = 0;
+            $tax = 0;
+
+            while ($row = $bean->db->fetchByAssoc($result)) {
+                $line_item = new AOS_Products_Quotes();
+                $line_item->retrieve($row['id']);
+                $qty = $line_item->product_qty;
+                $list_price = $line_item->product_list_price;
+                $unit_price = $line_item->product_unit_price;
+                $discount_amount = $line_item->product_discount_amount;
+                $vat_amt = $line_item->vat_amt;
+                $deleted = $line_item->deleted;
+
+                if ($qty !== 0 && $list_price !== null && $deleted != 1) {
+                    $tot_amt += $list_price * $qty;
+                } else if ($qty !== 0 && $unit_price !== 0 && $deleted != 1) {
+                    $tot_amt += $unit_price * $qty;
+                }
+                if ($discount_amount !== 0 && $deleted != 1) {
+                    $dis_tot += $discount_amount * $qty;
+                }
+                if ($vat_amt !== 0 && $deleted != 1) {
+                    $tax += $vat_amt;
+                }
+            }
+            $subtotal = $tot_amt + $dis_tot;
+            $group->total_amt = $tot_amt;
+            $group->discount_amount = $dis_tot;
+            $group->subtotal_amount = $subtotal;
+            $group->tax_amount = $tax;
+            $group->subtotal_tax_amount = $subtotal + $tax;
+            $group->total_amount = $subtotal + $tax;
+            $group->save();
+            $sql = "UPDATE aos_products_quotes SET group_id = '".$group->id."' WHERE parent_id = '".$bean->id."' AND deleted = '0'";
+            $bean->db->query($sql);
+        }
+    }
 }
