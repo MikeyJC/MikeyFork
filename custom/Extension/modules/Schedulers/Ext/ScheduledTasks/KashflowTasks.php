@@ -1,5 +1,7 @@
 <?php
 
+
+$job_strings[] = 'kashFlowSync';
 $job_strings[] = 'getCustomers';
 $job_strings[] = 'getProducts';
 $job_strings[] = 'getInvoices';
@@ -9,6 +11,16 @@ require_once 'modules/AOS_Products/AOS_Products.php';
 require_once 'modules/AOS_Products_Quotes/AOS_Products_Quotes.php';
 require_once 'modules/AOS_Invoices/AOS_Invoices.php';
 require_once 'modules/Accounts/Account.php';
+
+/**
+ * Run all three kashflow tasks
+ */
+function kashFlowSync()
+{
+    getProducts();
+    getCustomers();
+    getInvoices();
+}
 
 /**
  * @return bool
@@ -60,10 +72,11 @@ function getProducts() {
         $response = $kashflow->getSubProducts($code);
         if ($response->Status == "OK") {
             $productsArray = array();
-            if(!empty($response->GetSubProductsResult->SubProduct->id))
+            if (!empty($response->GetSubProductsResult->SubProduct->id)) {
                 $productsArray[] = $response->GetSubProductsResult->SubProduct;
-            else
+            } elseif (is_array($response->GetSubProductsResult->SubProduct)) {
                 $productsArray = $response->GetSubProductsResult->SubProduct;
+            }
             foreach($productsArray as $product) {
                 if(!empty($product->id)) {
                     // Find based on Kashflow ID
@@ -80,39 +93,21 @@ function getProducts() {
 }
 
 /**
- *
- */
-function getInvoicesFromLast24Hours() {
-    getInvoicesFromInterval('1 day', 10);
-}
-
-/**
- *
- */
-function getInvoicesFromLastWeek() {
-    getInvoicesFromInterval('1 week', 20);
-}
-
-/**
- *
- */
-function getInvoicesFromLastMonth() {
-    getInvoicesFromInterval('1 month', 50);
-}
-
-/**
  * @param string $interval
  * @param int $maxNewRecords
  */
-function getInvoices($interval, $maxNewRecords = 50) {
+function getInvoices($interval = false, $maxNewRecords = 500) {
 
     global $timedate, $sugar_config;
 
+    if (!$interval) {
+        $interval = $sugar_config['kashflow_api']['invoice_range'];
+    }
     // Set script timeout to 10 hours
     ini_set("max_execution_time", "3600");
 
     $end = $timedate->getNow();
-    $interval1 = DateInterval::createFromDateString($sugar_config['kashflow_api']['invoice_range']);
+    $interval1 = DateInterval::createFromDateString($interval);
     $start = $timedate->getNow()->sub($interval1);
 
     $kashflow = new Kashflow();
@@ -124,9 +119,9 @@ function getInvoices($interval, $maxNewRecords = 50) {
 }
 
 /**
- *
+ * @param string $startDate
  */
-function getAllInvoices() {
+function getAllInvoices($startDate = '2000-01-01') {
 
     global $timedate;
 
@@ -134,7 +129,7 @@ function getAllInvoices() {
     ini_set("max_execution_time", "36000");
 
     $interval = DateInterval::createFromDateString('1 month');
-    $start = $timedate->fromDbDate('2000-01-01');
+    $start = $timedate->fromDbDate($startDate);
     $end = $timedate->getNow();
 
     $kashflow = new Kashflow();
@@ -160,7 +155,7 @@ function saveInvoiceResponse($response, $maxNewRecords = 50) {
     $invoiceArray = [];
     if (!empty($response->GetInvoicesByDateRangeResult->Invoice->InvoiceDBID)) {
         $invoiceArray[] = $response->GetInvoicesByDateRangeResult->Invoice;
-    } else {
+    } elseif (is_array($response->GetInvoicesByDateRangeResult->Invoice)) {
         $invoiceArray = $response->GetInvoicesByDateRangeResult->Invoice;
     }
 
@@ -198,6 +193,9 @@ function checkIfKashFlowRecordsExists($recordArray, $table, $fieldsToCheck, $sub
 {
     global $db;
     $existing = [];
+    if (!count($recordArray)) {
+        return $existing;
+    }
     $arrayFieldsToCheck = [];
     foreach ($fieldsToCheck as $recordName => $dbName) {
         $arrayFieldsToCheck[$dbName] = [];
@@ -215,7 +213,8 @@ function checkIfKashFlowRecordsExists($recordArray, $table, $fieldsToCheck, $sub
     foreach ($arrayFieldsToCheck as $fieldName => $values) {
         $sql .= "OR $fieldName IN (" . implode(',', $values) . ") ";
     }
-    $sql = str_replace('WHERE OR', 'WHERE', $sql);
+    $sql = str_replace('WHERE OR', 'WHERE (', $sql);
+    $sql .= ') AND deleted = 0';
     $result = $db->query($sql);
     $fieldToReturn = array_shift($fieldsToCheck);
     while ($row = $db->fetchByAssoc($result)) {
@@ -235,15 +234,15 @@ function updateAccount($parentId, $customer) {
 
     $sql = "UPDATE accounts " .
         "SET kashflow_code = '" . $customer->Code . "', " .
-        "name = '" . $customer->Name . "', " .
-        "phone_office = '" . $customer->Telephone . "', " .
-        "phone_fax = '" . $customer->Fax . "', " .
-        "billing_address_street = '" . $customer->Address1 . "', " .
-        "billing_address_city = '" . $customer->Address2 . "', " .
-        "billing_address_state = '" . $customer->Address3 . "', " .
-        "billing_address_country = '" . $customer->Address4 . "', " .
-        "billing_address_postalcode = '" . $customer->Postcode . "', " .
-        "website = '" . $customer->Website . "' " .
+        "name = '" . $db->quote($customer->Name) . "', " .
+        "phone_office = '" . $db->quote($customer->Telephone) . "', " .
+        "phone_fax = '" . $db->quote($customer->Fax) . "', " .
+        "billing_address_street = '" . $db->quote($customer->Address1) . "', " .
+        "billing_address_city = '" . $db->quote($customer->Address2) . "', " .
+        "billing_address_state = '" . $db->quote($customer->Address3) . "', " .
+        "billing_address_country = '" . $db->quote($customer->Address4) . "', " .
+        "billing_address_postalcode = '" . $db->quote($customer->Postcode) . "', " .
+        "website = '" . $db->quote($customer->Website) . "' " .
         "WHERE id = '" . $parentId . "'";
     $db->query($sql);
 
@@ -251,10 +250,12 @@ function updateAccount($parentId, $customer) {
     if(!empty($customer->ContactFirstName) && !empty($customer->ContactLastName)) {
         $sql = "UPDATE contacts " .
             "SET salutation = '" . $customer->ContactTitle . "', " .
-            "first_name = '" . $customer->ContactFirstName . "', " .
-            "last_name = '" . $customer->ContactLastName . "', " .
-            "phone_mobile = '" . $customer->Mobile . "' " .
-            "WHERE billing_contact = 1 AND account_id = '" . $parentId . "'";
+            "first_name = '" . $db->quote($customer->ContactFirstName) . "', " .
+            "last_name = '" . $db->quote($customer->ContactLastName) . "', " .
+            "phone_mobile = '" . $db->quote($customer->Mobile) . "' " .
+            "WHERE billing_contact = 1 " .
+            "AND id IN (SELECT contact_id FROM accounts_contacts WHERE account_id = " .
+            "'" . $parentId . "') LIMIT 1";
         $db->query($sql);
     }
 }
@@ -333,10 +334,10 @@ function updateProduct($productBean, $product) {
 
     global $db;
     $sql = "UPDATE aos_products " .
-           "SET nominal_code = '" . $product->ParentID . "', " .
-           "name = '" . $product->Name . "', " .
-           "part_number = '" . substr($product->Code, 0, 10) . "', " .
-           "description = '" . substr($product->Description, 0, 10) . "', " .
+           "SET nominal_code = '" . $db->quote($product->ParentID) . "', " .
+           "name = '" . $db->quote($product->Name) . "', " .
+           "part_number = '" . $db->quote(substr($product->Code, 0, 10)) . "', " .
+           "description = '" . $db->quote(substr($product->Description, 0, 10)) . "', " .
            "price = '" . ($product->Price === 1 ? "Paid" : "Unpaid") . "', " .
            "vat_rate = '" . $product->VatRate . "', " .
            "cost = '" . $product->WholesalePrice . "', " .
@@ -377,7 +378,7 @@ function updateInvoice(stdClass $invoice) {
     global $db;
     $sql = "UPDATE aos_invoices " .
         "SET number = '" . $invoice->InvoiceNumber . "', " .
-        "name = '" . $invoice->CustomerName . "', " .
+        "name = '" . $db->quote($invoice->CustomerName) . "', " .
         "invoice_date = '" . substr($invoice->InvoiceDate, 0, 10) . "', " .
         "due_date = '" . substr($invoice->DueDate, 0, 10) . "', " .
         "status = '" . ($invoice->Paid === 1 ? "Paid" : "Unpaid") . "', " .
@@ -453,6 +454,9 @@ function updateLineItems($parentId, $invoice) {
         } else {
             $lineArray = $invoice->Lines->anyType;
         }
+        if (!is_array(!$lineArray)) {
+            $lineArray = [$lineArray];
+        }
         $existingInDb = checkIfKashFlowRecordsExists(
             $lineArray,
             'aos_products_quotes',
@@ -494,14 +498,14 @@ function updateLineItem($lineItem, $parentId)
 
     $sql = "UPDATE aos_products_quotes " .
         "SET product_qty = '" . $lineItem->Quantity . "', " .
-        "item_description = '" . $lineItem->Description . "', " .
+        "item_description = '" . $db->quote($lineItem->Description) . "', " .
         "product_list_price = '" . $lineItem->Rate . "', " .
         "product_unit_price = '" . $lineItem->Rate . "', " .
         "vat = '" . round($lineItem->VatRate, 1) . "', " .
         "vat_amt = '" . round($lineItem->VatRate, 2) . "', " .
         "number = '" . $lineItem->Sort . "', " .
         "product_id = '" . $productRow['id'] . "', " .
-        "name = '" . (empty($productRow['name']) ? $lineItem->Description : $productRow['name']) . "', " .
+        "name = '" . $db->quote((empty($productRow['name']) ? $lineItem->Description : $productRow['name'])) . "', " .
         "part_number = '" . $productRow['part_number'] . "', " .
         "parent_type = 'AOS_Invoices', " .
         "parent_id = '$parentId', " .
