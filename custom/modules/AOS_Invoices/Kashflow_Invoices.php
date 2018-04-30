@@ -147,7 +147,7 @@ class Kashflow_Invoices {
 
     function calculateTotals($bean){
 
-        if(empty($bean->total_amt) || $bean->total_amt == "") {
+        if(empty($bean->total_amt) || $bean->total_amt == "" || $bean->total_amt == "0.00") {
             $sql = "SELECT pg.id, pg.group_id FROM aos_products_quotes pg LEFT JOIN aos_line_item_groups lig ON pg.group_id = lig.id WHERE pg.parent_type = '".$bean->object_name."' AND pg.parent_id = '".$bean->id."' AND pg.deleted = 0 ORDER BY lig.number ASC, pg.number ASC";
             $result = $bean->db->query($sql);
             $tot_amt = 0;
@@ -176,6 +176,9 @@ class Kashflow_Invoices {
                     $tax += $vat_amt;
                 }
             }
+            if($tot_amt == 0) {
+                return;
+            }
             $subtotal = $tot_amt + $dis_tot;
 
             $bean->total_amt = $tot_amt;
@@ -200,9 +203,14 @@ class Kashflow_Invoices {
     }
 
     function makeGroup($bean) {
-        $sql = "SELECT id FROM aos_line_item_groups WHERE parent_id = '".$bean->id."' AND deleted = '0'";
+        $sql = "SELECT id, total_amount FROM aos_line_item_groups WHERE parent_id = '".$bean->id."' AND deleted = '0'";
         $result = $bean->db->query($sql);
         $row = $bean->db->fetchByAssoc($result);
+        if($row['total_amount'] == "0.000000") {
+            $sql = "DELETE FROM aos_line_item_groups WHERE id = '".$row['id']."'";
+            $bean->db->query($sql);
+            $row['id'] = null;
+        }
         if(empty($row['id'])) {
             $group = new AOS_Line_Item_Groups();
             $group->number = 1;
@@ -237,6 +245,9 @@ class Kashflow_Invoices {
                 if ($vat_amt !== 0 && $deleted != 1) {
                     $tax += $vat_amt;
                 }
+            }
+            if($tot_amt == 0) {
+                return;
             }
             $subtotal = $tot_amt + $dis_tot;
             $group->total_amt = $tot_amt;
