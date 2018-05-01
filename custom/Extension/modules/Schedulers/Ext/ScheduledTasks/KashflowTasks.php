@@ -378,13 +378,14 @@ function checkIfChangedProduct($productBean, $product) {
  */
 function updateInvoice(stdClass $invoice) {
     global $db;
+    $total_amount = $invoice->NetAmount + $invoice->VATAmount;
     $sql = "UPDATE aos_invoices " .
         "SET number = '" . $invoice->InvoiceNumber . "', " .
         "name = '" . $db->quote($invoice->CustomerName) . "', " .
         "invoice_date = '" . substr($invoice->InvoiceDate, 0, 10) . "', " .
         "due_date = '" . substr($invoice->DueDate, 0, 10) . "', " .
         "status = '" . ($invoice->Paid === 1 ? "Paid" : "Unpaid") . "', " .
-        "total_amount = '" . $invoice->NetAmount . "', " .
+        "total_amount = '" . $total_amount . "', " .
         "billing_account_id = " .
         "(SELECT accounts.id FROM accounts WHERE accounts.kashflow_id = '" . $invoice->CustomerID . "' LIMIT 1), " .
         "tax_amount = '" . $invoice->VATAmount . "', " .
@@ -411,7 +412,7 @@ function createInvoice($invoice) {
     $invoiceBean->due_date = $dueDate;
     $invoiceBean->status = $invoice->Paid == 1 ? "Paid" : "Unpaid";
     $invoiceBean->billing_account_id = $accountBean->id;
-    $invoiceBean->total_amount = $invoice->NetAmount;
+    $invoiceBean->total_amount = $invoice->NetAmount + $invoice->VATAmount;
     $invoiceBean->tax_amount = $invoice->VATAmount;
     $invoiceBean->amount_paid = $invoice->AmountPaid;
     $invoiceBean->from_kashflow = true;
