@@ -171,13 +171,12 @@ function saveInvoiceResponse($response, $maxNewRecords = 50) {
             updateInvoice($invoice);
         }
         else {
-            $invoiceBean = createInvoice($invoice);
-            $beanId = $invoiceBean->id;
+            $beanId = createInvoice($invoice);
             $newlyCreated++;
         }
         updateLineItems($beanId, $invoice);
-        makeGroup($invoiceBean);
-        calculateTotals($invoiceBean);
+        makeGroup($beanId);
+        calculateTotals($beanId);
         if ($maxNewRecords && $newlyCreated > $maxNewRecords) {
             break;
         }
@@ -457,7 +456,7 @@ function updateLineItems($parentId, $invoice) {
         } else {
             $lineArray = $invoice->Lines->anyType;
         }
-        if (!is_array(!$lineArray)) {
+        if (!is_array($lineArray)) {
             $lineArray = [$lineArray];
         }
         $existingInDb = checkIfKashFlowRecordsExists(
@@ -505,7 +504,7 @@ function updateLineItem($lineItem, $parentId)
         "product_list_price = '" . $lineItem->Rate . "', " .
         "product_unit_price = '" . $lineItem->Rate . "', " .
         "vat = '" . round($lineItem->VatRate, 1) . "', " .
-        "vat_amt = '" . round($lineItem->VatRate, 2) . "', " .
+        "vat_amt = '" . round($lineItem->VatAmount, 2) . "', " .
         "number = '" . $lineItem->Sort . "', " .
         "product_id = '" . $productRow['id'] . "', " .
         "name = '" . $db->quote((empty($productRow['name']) ? $lineItem->Description : $productRow['name'])) . "', " .
@@ -548,16 +547,18 @@ function createLineItem($values, $parentId)
     }
 }
 
-function calculateTotals($bean){
-
+function calculateTotals($beanID){
+    global $db;
+    $bean = new AOS_Invoices();
+    $bean->retrieve($beanID);
     if(empty($bean->total_amt) || $bean->total_amt == "" || $bean->total_amt == "0.00") {
         $sql = "SELECT pg.id, pg.group_id FROM aos_products_quotes pg LEFT JOIN aos_line_item_groups lig ON pg.group_id = lig.id WHERE pg.parent_type = '".$bean->object_name."' AND pg.parent_id = '".$bean->id."' AND pg.deleted = 0 ORDER BY lig.number ASC, pg.number ASC";
-        $result = $bean->db->query($sql);
+        $result = $db->query($sql);
         $tot_amt = 0;
         $dis_tot = 0;
         $tax = 0;
 
-        while ($row = $bean->db->fetchByAssoc($result)) {
+        while ($row = $db->fetchByAssoc($result)) {
             $line_item = new AOS_Products_Quotes();
             $line_item->retrieve($row['id']);
             $qty = $line_item->product_qty;
@@ -599,66 +600,78 @@ function calculateTotals($bean){
 
         $sql = "UPDATE aos_invoices SET total_amt = '".$tot_amt."', discount_amount = '".$dis_tot."', subtotal_amount = '".$subtotal."', shipping_tax_amt = '".$shippingtax_amt."', 
                 tax_amount = '".$tax."', subtotal_tax_amount = '".$subtotal_tax."', total_amount = '".$total_amount."'WHERE id = '".$bean->id."' AND deleted = '0'";
-        $bean->db->query($sql);
+        $db->query($sql);
+    } else {
+        $total = $bean->subtotal_amount + $bean->tax_amount + $bean->shipping_tax_amt;
+        $sql = "UPDATE aos_invoices SET total_amount = '".$total."' WHERE id = '".$bean->id."' AND deleted = '0'";
+        $db->query($sql);
     }
 }
 
-function makeGroup($bean) {
+function makeGroup($beanID) {
+    global $db;
+    $bean = new AOS_Invoices();
+    $bean->retrieve($beanID);
     $sql = "SELECT id, total_amount FROM aos_line_item_groups WHERE parent_id = '".$bean->id."' AND deleted = '0'";
-    $result = $bean->db->query($sql);
-    $row = $bean->db->fetchByAssoc($result);
+    $result = $db->query($sql);
+    $row = $db->fetchByAssoc($result);
     if($row['total_amount'] == "0.000000") {
         $sql = "DELETE FROM aos_line_item_groups WHERE id = '".$row['id']."'";
-        $bean->db->query($sql);
+        $db->query($sql);
         $row['id'] = null;
     }
+    $group = new AOS_Line_Item_Groups();
+    $group->number = 1;
+    $group->assigned_user_id = $bean->assigned_user_id;
+    $group->currency_id = $bean->currency_id;
+    $group->parent_id = $bean->id;
+    $group->parent_type = $bean->object_name;
+    $sql = "SELECT pg.id FROM aos_products_quotes pg WHERE pg.parent_type = '".$bean->object_name."' AND pg.parent_id = '".$bean->id."' AND pg.deleted = 0 ORDER BY pg.number ASC";
+    $result = $db->query($sql);
+    $tot_amt = 0;
+    $dis_tot = 0;
+    $tax = 0;
+
+    while ($row = $db->fetchByAssoc($result)) {
+        $line_item = new AOS_Products_Quotes();
+        $line_item->retrieve($row['id']);
+        $qty = $line_item->product_qty;
+        $list_price = $line_item->product_list_price;
+        $unit_price = $line_item->product_unit_price;
+        $discount_amount = $line_item->product_discount_amount;
+        $vat_amt = $line_item->vat_amt;
+        $deleted = $line_item->deleted;
+
+        if ($qty !== 0 && $list_price !== null && $deleted != 1) {
+            $tot_amt += $list_price * $qty;
+        } else if ($qty !== 0 && $unit_price !== 0 && $deleted != 1) {
+            $tot_amt += $unit_price * $qty;
+        }
+        if ($discount_amount !== 0 && $deleted != 1) {
+            $dis_tot += $discount_amount * $qty;
+        }
+        if ($vat_amt !== 0 && $deleted != 1) {
+            $tax += $vat_amt;
+        }
+    }
+    if($tot_amt == 0) {
+        return;
+    }
+    $subtotal = $tot_amt + $dis_tot;
+    $group->total_amt = $tot_amt;
+    $group->discount_amount = $dis_tot;
+    $group->subtotal_amount = $subtotal;
+    $group->tax_amount = $tax;
+    $group->subtotal_tax_amount = $subtotal + $tax;
+    $group->total_amount = $subtotal + $tax;
     if(empty($row['id'])) {
-        $group = new AOS_Line_Item_Groups();
-        $group->number = 1;
-        $group->assigned_user_id = $bean->assigned_user_id;
-        $group->currency_id = $bean->currency_id;
-        $group->parent_id = $bean->id;
-        $group->parent_type = $bean->object_name;
-        $sql = "SELECT pg.id FROM aos_products_quotes pg WHERE pg.parent_type = '".$bean->object_name."' AND pg.parent_id = '".$bean->id."' AND pg.deleted = 0 ORDER BY pg.number ASC";
-        $result = $bean->db->query($sql);
-        $tot_amt = 0;
-        $dis_tot = 0;
-        $tax = 0;
-
-        while ($row = $bean->db->fetchByAssoc($result)) {
-            $line_item = new AOS_Products_Quotes();
-            $line_item->retrieve($row['id']);
-            $qty = $line_item->product_qty;
-            $list_price = $line_item->product_list_price;
-            $unit_price = $line_item->product_unit_price;
-            $discount_amount = $line_item->product_discount_amount;
-            $vat_amt = $line_item->vat_amt;
-            $deleted = $line_item->deleted;
-
-            if ($qty !== 0 && $list_price !== null && $deleted != 1) {
-                $tot_amt += $list_price * $qty;
-            } else if ($qty !== 0 && $unit_price !== 0 && $deleted != 1) {
-                $tot_amt += $unit_price * $qty;
-            }
-            if ($discount_amount !== 0 && $deleted != 1) {
-                $dis_tot += $discount_amount * $qty;
-            }
-            if ($vat_amt !== 0 && $deleted != 1) {
-                $tax += $vat_amt;
-            }
-        }
-        if($tot_amt == 0) {
-            return;
-        }
-        $subtotal = $tot_amt + $dis_tot;
-        $group->total_amt = $tot_amt;
-        $group->discount_amount = $dis_tot;
-        $group->subtotal_amount = $subtotal;
-        $group->tax_amount = $tax;
-        $group->subtotal_tax_amount = $subtotal + $tax;
-        $group->total_amount = $subtotal + $tax;
         $group->save();
         $sql = "UPDATE aos_products_quotes SET group_id = '".$group->id."' WHERE parent_id = '".$bean->id."' AND deleted = '0'";
-        $bean->db->query($sql);
+        $db->query($sql);
+    } else {
+        $sql = "UPDATE aos_line_item_groups SET total_amt = '".$group->total_amt."', discount_amount = '".$group->discount_amount."', subtotal_amount = '".$group->subtotal_amount."', 
+        tax_amount = '".$group->tax_amount."', subtotal_tax_amount = '".$group->subtotal_tax_amount."', total_amount = '".$group->total_amount."'
+        WHERE id = '".$row['id']."' AND deleted = '0'";
+        $db->query($sql);
     }
 }
