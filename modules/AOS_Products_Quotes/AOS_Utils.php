@@ -35,10 +35,10 @@ function perform_aos_save($focus){
         if(isset($focus->field_defs[$fieldNameDollar])){
 
             $focus->$fieldNameDollar = '';
-            if(!number_empty($focus->field_defs[$field['name']])){
+            if(!number_empty($focus->field_defs[$fieldName])){
                 $currency = new Currency();
                 $currency->retrieve($focus->currency_id);
-                $focus->$fieldNameDollar = $currency->convertToDollar(unformat_number($fieldName));
+                $focus->$fieldNameDollar = $currency->convertToDollar(unformat_number($focus->$fieldName));
             }
 
         }

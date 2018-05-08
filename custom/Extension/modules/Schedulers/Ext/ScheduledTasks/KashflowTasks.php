@@ -20,6 +20,7 @@ function kashFlowSync()
     getProducts();
     getCustomers();
     getInvoices();
+    return true;
 }
 
 /**
@@ -562,6 +563,9 @@ function calculateTotals($beanID){
         while ($row = $db->fetchByAssoc($result)) {
             $line_item = new AOS_Products_Quotes();
             $line_item->retrieve($row['id']);
+            if(empty($line_item->product_discount_amount)){
+                $line_item->product_discount_amount = "0.0000";
+            }
             $qty = $line_item->product_qty;
             $list_price = $line_item->product_list_price;
             $unit_price = $line_item->product_unit_price;
@@ -636,6 +640,9 @@ function makeGroup($beanID) {
     while ($row = $db->fetchByAssoc($result)) {
         $line_item = new AOS_Products_Quotes();
         $line_item->retrieve($row['id']);
+        if(empty($line_item->product_discount_amount)){
+            $line_item->product_discount_amount = "0.0000";
+        }
         $qty = $line_item->product_qty;
         $list_price = $line_item->product_list_price;
         $unit_price = $line_item->product_unit_price;
