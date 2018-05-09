@@ -594,6 +594,13 @@ function calculateTotals($beanID){
 
         $shippingtax = $bean->shipping_tax;
 
+        if(empty($shipping)) {
+            $shipping = 0;
+        }
+        if(empty($shippingtax)) {
+            $shippingtax = 0;
+        }
+
         $shippingtax_amt = $shipping * ($shippingtax/100);
 
         $bean->shipping_tax_amt = $shippingtax_amt;
@@ -665,8 +672,11 @@ function makeGroup($beanID) {
     if($tot_amt == 0) {
         return;
     }
-    $subtotal = $tot_amt + $dis_tot;
     $group->total_amt = $tot_amt;
+    $subtotal = $tot_amt + $dis_tot;
+    if($group->total_amount == $subtotal + $tax){
+        return;
+    }
     $group->discount_amount = $dis_tot;
     $group->subtotal_amount = $subtotal;
     $group->tax_amount = $tax;
