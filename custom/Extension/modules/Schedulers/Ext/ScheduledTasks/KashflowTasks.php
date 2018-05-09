@@ -421,7 +421,7 @@ function createInvoice($invoice) {
     $invoiceBean->save();
     $sql = "UPDATE aos_invoices SET number = '".$invoice->InvoiceNumber."' WHERE id = '".$invoiceBean->id."'";
     $invoiceBean->db->query($sql);
-    return $invoiceBean;
+    return $invoiceBean->id;
 }
 
 /**
