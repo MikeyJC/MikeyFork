@@ -4,7 +4,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2017 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -242,7 +242,7 @@ RegExp.escape = function (text) { // http://simon.incutio.com/archive/2006/01/20
   return text.replace(arguments.callee.sRE, '\\$1');
 }
 
-function addAlert(type, name, subtitle, description, time, redirect) {
+function addAlert(type, name, subtitle, description, time, redirect, reminder_id) {
   var addIndex = alertList.length;
   alertList[addIndex] = new Array();
   alertList[addIndex]['name'] = name;
@@ -252,6 +252,9 @@ function addAlert(type, name, subtitle, description, time, redirect) {
   alertList[addIndex]['time'] = time;
   alertList[addIndex]['done'] = 0;
   alertList[addIndex]['redirect'] = redirect;
+  if (typeof reminder_id !== 'undefined') {
+    alertList[addIndex]['reminder_id'] = reminder_id;
+  }
 }
 function checkAlerts() {
   var secondsSinceLoad = (Date.now() - scriptStartedTime) / 1000;
@@ -264,13 +267,14 @@ function checkAlerts() {
         if (typeof Alerts !== "undefined") {
           //
           // Use Alerts module
-          Alerts.prototype.show(
+          Alerts.prototype.addToManager(
             {
               title: alertList[mj]['type'] + ": " + alertList[mj]['name'],
               options: {
                 body: alertList[mj]['subtitle'] + "\n" + alertList[mj]['description'] + "\n\n",
                 url_redirect: alertList[mj]['redirect'],
-                target_module: alertList[mj]['type']
+                target_module: alertList[mj]['type'],
+                reminder_id: alertList[mj]['reminder_id']
               }
             }
           );
@@ -1984,20 +1988,56 @@ function sugarListView() {
 
 sugarListView.prototype.confirm_action = function (del) {
   if (del == 1) {
-    return confirm(SUGAR.language.get('app_strings', 'NTC_DELETE_CONFIRMATION_NUM') + sugarListView.get_num_selected() + SUGAR.language.get('app_strings', 'NTC_DELETE_SELECTED_RECORDS'));
+    return confirm(SUGAR.language.get('app_strings', 'NTC_DELETE_CONFIRMATION_NUM') + sugarListView.get_num_selected_string() + SUGAR.language.get('app_strings', 'NTC_DELETE_SELECTED_RECORDS'));
   }
   else {
-    return confirm(SUGAR.language.get('app_strings', 'NTC_UPDATE_CONFIRMATION_NUM') + sugarListView.get_num_selected() + SUGAR.language.get('app_strings', 'NTC_DELETE_SELECTED_RECORDS'));
+    return confirm(SUGAR.language.get('app_strings', 'NTC_UPDATE_CONFIRMATION_NUM') + sugarListView.get_num_selected_string() + SUGAR.language.get('app_strings', 'NTC_DELETE_SELECTED_RECORDS'));
   }
 
 }
-sugarListView.get_num_selected = function () {
-  var selectCount = $("input[name='selectCount[]']:first");
-  if (selectCount.length > 0)
-    return parseInt(selectCount.val().replace("+", ""));
-  return 0;
 
+/**
+ * Returns whether the value returned by get_num_selected() is exact. In case it isn't the real count could be
+ * more than the returned value.
+ *
+ * @returns {boolean}
+ */
+sugarListView.get_num_selected_is_exact = function () {
+  var the_form = document.MassUpdate;
+  return (typeof the_form == 'undefined' || the_form.select_entire_list.value != 1 || !the_form.show_plus.value);
 }
+
+/**
+ * Returns the number of selected records as a string. In case the value is not exact because count queries are
+ * disabled then '+' is appended.
+ *
+ * @returns {string}
+ */
+sugarListView.get_num_selected_string = function () {
+  var count = sugarListView.get_num_selected().toString();
+  if (!sugarListView.get_num_selected_is_exact()) {
+    count += '+';
+  }
+  return count;
+}
+
+/**
+ * Returns the number of selected records.
+ * Use get_num_selected_is_exact() to check whether the value is exact or not.
+ *
+ * @returns {number}
+ */
+sugarListView.get_num_selected = function () {
+  var the_form = document.MassUpdate;
+  if (typeof the_form != 'undefined' && the_form.select_entire_list.value == 1) {
+    var selectCount = $("input[name='selectCount[]']:first");
+    if (selectCount.length > 0) {
+      return parseInt(selectCount.val().replace("+", ""));
+    }
+  }
+  return sugarListView.get_checks_count();
+}
+
 sugarListView.update_count = function (count, add) {
   if (typeof document.MassUpdate != 'undefined') {
     the_form = document.MassUpdate;
@@ -2005,11 +2045,11 @@ sugarListView.update_count = function (count, add) {
       if (typeof the_form.elements[wp].name != 'undefined' && the_form.elements[wp].name == 'selectCount[]') {
         if (add) {
           the_form.elements[wp].value = parseInt(the_form.elements[wp].value, 10) + count;
-          if (the_form.select_entire_list.value == 1 && the_form.show_plus.value) {
+          if (!sugarListView.get_num_selected_is_exact()) {
             the_form.elements[wp].value += '+';
           }
         } else {
-          if (the_form.select_entire_list.value == 1 && the_form.show_plus.value) {
+          if (!sugarListView.get_num_selected_is_exact()) {
             the_form.elements[wp].value = count + '+';
           } else {
             the_form.elements[wp].value = count;
@@ -2071,143 +2111,7 @@ sugarListView.prototype.use_external_mail_client_callback = function (o) {
     location.href = 'mailto:' + o.responseText;
 }
 
-sugarListView.prototype.send_form_for_emails = function (select, currentModule, action, no_record_txt, action_module, totalCount, totalCountError) {
-  if (typeof(SUGAR.config.email_sugarclient_listviewmaxselect) === 'undefined') {
-    maxCount = 10;
-  }
-  else {
-    maxCount = SUGAR.config.email_sugarclient_listviewmaxselect;
-  }
-
-  if (document.MassUpdate.select_entire_list.value == 1) {
-    if (totalCount > maxCount) {
-      alert(totalCountError);
-      return;
-    } // if
-    select = false;
-  }
-  else if (document.MassUpdate.massall.checked == true)
-    select = false;
-  else
-    select = true;
-
-  sugarListView.get_checks();
-  // create new form to post (can't access action property of MassUpdate form due to action input)
-  var newForm = document.createElement('form');
-  newForm.method = 'post';
-  newForm.action = action;
-  newForm.name = 'newForm';
-  newForm.id = 'newForm';
-  var uidTa = document.createElement('textarea');
-  uidTa.name = 'uid';
-  uidTa.style.display = 'none';
-
-  if (select) { // use selected items
-    uidTa.value = document.MassUpdate.uid.value;
-  }
-  else { // use current page
-    inputs = document.MassUpdate.elements;
-    ar = new Array();
-    for (i = 0; i < inputs.length; i++) {
-      if (inputs[i].name == 'mass[]' && inputs[i].checked && typeof(inputs[i].value) != 'function') {
-        ar.push(inputs[i].value);
-      }
-    }
-    uidTa.value = ar.join(',');
-  }
-
-  if (uidTa.value == '') {
-    alert(no_record_txt);
-    return false;
-  }
-
-  var selectedArray = uidTa.value.split(",");
-  if (selectedArray.length > maxCount) {
-    alert(totalCountError);
-    return;
-  } // if
-  newForm.appendChild(uidTa);
-
-  var moduleInput = document.createElement('input');
-  moduleInput.name = 'module';
-  moduleInput.type = 'hidden';
-  moduleInput.value = currentModule;
-  newForm.appendChild(moduleInput);
-
-  var actionInput = document.createElement('input');
-  actionInput.name = 'action';
-  actionInput.type = 'hidden';
-  actionInput.value = 'Compose';
-  newForm.appendChild(actionInput);
-
-  if (typeof action_module != 'undefined' && action_module != '') {
-    var actionModule = document.createElement('input');
-    actionModule.name = 'action_module';
-    actionModule.type = 'hidden';
-    actionModule.value = action_module;
-    newForm.appendChild(actionModule);
-  }
-  //return_info must follow this pattern."&return_module=Accounts&return_action=index"
-  if (typeof return_info != 'undefined' && return_info != '') {
-    var params = return_info.split('&');
-    if (params.length > 0) {
-      for (var i = 0; i < params.length; i++) {
-        if (params[i].length > 0) {
-          var param_nv = params[i].split('=');
-          if (param_nv.length == 2) {
-            returnModule = document.createElement('input');
-            returnModule.name = param_nv[0];
-            returnModule.type = 'hidden';
-            returnModule.value = param_nv[1];
-            newForm.appendChild(returnModule);
-          }
-        }
-      }
-    }
-  }
-
-  var isAjaxCall = document.createElement('input');
-  isAjaxCall.name = 'ajaxCall';
-  isAjaxCall.type = 'hidden';
-  isAjaxCall.value = true;
-  newForm.appendChild(isAjaxCall);
-
-  var isListView = document.createElement('input');
-  isListView.name = 'ListView';
-  isListView.type = 'hidden';
-  isListView.value = true;
-  newForm.appendChild(isListView);
-
-  var toPdf = document.createElement('input');
-  toPdf.name = 'to_pdf';
-  toPdf.type = 'hidden';
-  toPdf.value = true;
-  newForm.appendChild(toPdf);
-
-  //Grab the Quick Compose package for the listview
-  YAHOO.util.Connect.setForm(newForm);
-  var callback =
-    {
-      success: function (o) {
-        var resp = YAHOO.lang.JSON.parse(o.responseText);
-        var quickComposePackage = new Object();
-        quickComposePackage.composePackage = resp;
-        quickComposePackage.fullComposeUrl = 'index.php?module=Emails&action=Compose&ListView=true' +
-          '&uid=' + uidTa.value + '&action_module=' + action_module;
-
-        SUGAR.quickCompose.init(quickComposePackage);
-      }
-    }
-
-  YAHOO.util.Connect.asyncRequest('POST', 'index.php', callback, null);
-
-  // awu Bug 18624: Fixing issue where a canceled Export and unselect of row will persist the uid field, clear the field
-  document.MassUpdate.uid.value = '';
-
-  return false;
-}
-
-sugarListView.prototype.send_form = function (select, currentModule, action, no_record_txt, action_module, return_info) {
+sugarListView.prototype.send_form = function (select, currentModule, action, no_record_txt, action_module, return_info, ajax, callback) {
   if (document.MassUpdate.select_entire_list.value == 1) {
 
     if (sugarListView.get_checks_count() < 1) {
@@ -2300,8 +2204,17 @@ sugarListView.prototype.send_form = function (select, currentModule, action, no_
   }
 
   document.MassUpdate.parentNode.appendChild(newForm);
-
-  newForm.submit();
+  if (ajax) {
+    var _callback = callback ? callback : null;
+    $.post($('form[name="newForm"]').attr('action'), $('form[name="newForm"]').serialize(), function (resp) {
+      if (_callback) {
+        _callback(resp);
+      }
+    });
+    return false;
+  } else {
+    newForm.submit();
+  }
   // awu Bug 18624: Fixing issue where a canceled Export and unselect of row will persist the uid field, clear the field
   document.MassUpdate.uid.value = '';
 
@@ -2309,6 +2222,11 @@ sugarListView.prototype.send_form = function (select, currentModule, action, no_
 }
 //return a count of checked row.
 sugarListView.get_checks_count = function () {
+  // Return 0 if MassUpdate is undefined, to prevent an undefined property error.
+  if (typeof document.MassUpdate == 'undefined') {
+    return 0;
+  }
+
   ar = new Array();
 
   if (document.MassUpdate.uid.value != '') {
@@ -2322,8 +2240,12 @@ sugarListView.get_checks_count = function () {
   // build associated array of uids, associated array ensures uniqueness
   inputs = document.MassUpdate.elements;
   for (i = 0; i < inputs.length; i++) {
-    if (inputs[i].name == 'mass[]') {
-      ar[inputs[i].value] = (inputs[i].checked) ? 1 : 0; // 0 of it is unchecked
+    if (inputs[i].name === 'mass[]') {
+      if (inputs[i].value !== '') {
+        ar[inputs[i].value] = (inputs[i].checked) ? 1 : 0;
+      } else {
+        ar[i] = (inputs[i].checked) ? 1 : 0;
+      }
     }
   }
 
@@ -2388,9 +2310,8 @@ sugarListView.prototype.order_checks = function (order, orderBy, moduleString) {
   document.MassUpdate.return_module.value = '';
   document.MassUpdate.return_action.value = '';
   document.MassUpdate.submit();
-
-  return !checks;
 }
+
 sugarListView.prototype.save_checks = function (offset, moduleString) {
   checks = sugarListView.get_checks();
   if (typeof document.MassUpdate != 'undefined') {
@@ -2425,25 +2346,54 @@ sugarListView.prototype.check_item = function (cb, form) {
 
 sugarListView.prototype.toggleSelected = function () {
 
-  var numSelected = sugarListView.get_num_selected();
-  var selectedRecords = document.getElementById("selectedRecordsTop");
-  var selectActions = document.getElementById("selectActions");
-  var selectActionsDisabled = document.getElementById("selectActionsDisabled");
-  if (numSelected > 0) {
-    $(selectedRecords).removeAttr("style").addClass("show");
-    $(".selectActionsDisabled").hide();
-    jQuery('ul[name=selectActions]').each(function () {
-      jQuery(this).removeAttr("style").addClass("show");
-    });
+    var numSelected = sugarListView.get_num_selected();
+    var numSelectedString = sugarListView.get_num_selected_string();
+    var selectedRecords = document.getElementById("selectedRecordsTop");
+    var selectActions = document.getElementById("actionLinkTop");
+    var selectActionsDisabled = document.getElementById("select_actions_disabled_top");
+    var selectActionsBottom = document.getElementById("actionLinkBottom");
+    var selectActionsDisabledBottom = document.getElementById("select_actions_disabled_bottom");
 
-  } else {
-    $(selectedRecords).hide();
-    $(".selectActionsDisabled").removeAttr("style").addClass("show");
-    jQuery('ul[name=selectActions]').each(function () {
-      jQuery(this).hide();
-    });
-  }
-
+    if (numSelected > 0) {
+        $('.selectedRecords.value').html(numSelectedString);
+        $('.selectedRecords').removeClass('hidden');
+        $(selectedRecords).removeAttr("style").addClass("show");
+        $(".selectActionsDisabled").hide();
+        jQuery('ul[name=selectActions]').each(function () {
+            jQuery(this).removeAttr("style").addClass("show");
+        });
+        jQuery('ul[name=selectActionsBottom]').each(function () {
+            jQuery(this).removeAttr("style").addClass("show");
+        });
+        $(selectActionsDisabled).removeAttr("style").removeClass("show").addClass("hide");
+        $(selectActionsDisabledBottom).removeAttr("style").removeClass("show").addClass("hide");
+        jQuery('div[id=selectActionsDisabled]').each(function () {
+            jQuery(this).removeAttr("style").addClass("hide");
+        });
+        jQuery('div[id=selectActionsDisabledBottom]').each(function () {
+            jQuery(this).removeAttr("style").addClass("hide");
+        });
+    } else {
+        $('.selectedRecords').addClass('hidden');
+        $(selectedRecords).hide();
+        $(selectActions).removeAttr("style").removeClass("show").addClass("hide");
+        $(selectActionsBottom).removeAttr("style").removeClass("show").addClass("hide");
+        $(".selectActionsDisabled").removeAttr("style").addClass("show");
+        jQuery('ul[name=selectActions]').each(function () {
+            jQuery(this).removeAttr("style").addClass("hide");
+        });
+        jQuery('ul[name=selectActions]').each(function () {
+            jQuery(this).removeAttr("style").addClass("hide");
+        });
+        $(selectActionsDisabled).removeAttr("style").removeClass("hide").addClass("show");
+        $(selectActionsDisabledBottom).removeAttr("style").removeClass("hide").addClass("show");
+        jQuery('div[id=selectActionsDisabled]').each(function () {
+            jQuery(this).removeAttr("style").addClass("show");
+        });
+        jQuery('div[id=selectActionsDisabledBottom]').each(function () {
+            jQuery(this).removeAttr("style").addClass("show");
+        });
+    }
 }
 
 /**#28000, remove the  unselect record id from MassUpdate.uid **/
@@ -2491,10 +2441,7 @@ sugarListView.prototype.check_all = function (form, field, value, pageTotal) {
   });
   if (document.MassUpdate.select_entire_list &&
     document.MassUpdate.select_entire_list.value == 1) {
-    sugarListView.prototype.toggleSelected();
-    $(document.MassUpdate.massall).each(function () {
-      $(this).attr('disabled', true);
-    });
+    sugarListView.prototype.clear_all();
   }
   else {
     $(document.MassUpdate.massall).each(function () {
@@ -2627,7 +2574,8 @@ sugarListView.prototype.send_mass_update = function (mode, no_record_txt, del) {
           ar.push(document.MassUpdate.elements[wp].value);
         }
       }
-      if (document.MassUpdate.uid.value != '') document.MassUpdate.uid.value += ',';
+      if (document.MassUpdate.uid.value != '' && ar.length)
+        document.MassUpdate.uid.value += ',';
       document.MassUpdate.uid.value += ar.join(',');
       if (document.MassUpdate.uid.value == '') {
         alert(no_record_txt);
@@ -2962,7 +2910,7 @@ SUGAR.util = function () {
       }
     },
     evalScript: function (text) {
-      if (isSafari) {
+      if (UA.webkit && !UA.chrome) {
         var waitUntilLoaded = function () {
           SUGAR.evalScript_waitCount--;
           if (SUGAR.evalScript_waitCount == 0) {
@@ -3363,8 +3311,8 @@ SUGAR.util = function () {
             $dialog.dialog("option", "position", {my: 'left top', at: 'right top', of: $(el)});
           }
 
-          $dialog.dialog('open');
           $(".ui-dialog").appendTo("#content");
+          $dialog.dialog('open');
         }
 
 				success = function (data) {
@@ -3695,7 +3643,7 @@ SUGAR.savedViews = function () {
       }
       //add showSSDIV to url if it is available.  This determines whether saved search sub form should
       //be rendered open or not
-      if (document.getElementById('showSSDIV') && typeof(document.getElementById('showSSDIV') != 'undefined')) {
+      if (document.getElementById('showSSDIV') && (typeof(document.getElementById('showSSDIV')) != 'undefined')) {
         selecturl = selecturl + '&showSSDIV=' + document.getElementById('showSSDIV').value;
       }
       //use created url to navigate
@@ -4915,7 +4863,7 @@ SUGAR.append(SUGAR.util, {
       if (SUGAR.util.closeActivityPanel.panel)
         SUGAR.util.closeActivityPanel.panel.destroy();
       var singleModule = SUGAR.language.get("app_list_strings", "moduleListSingular")[module];
-      singleModule = typeof(singleModule != 'undefined') ? singleModule.toLowerCase() : '';
+      singleModule = (typeof(singleModule) != 'undefined') ? singleModule.toLowerCase() : '';
       var closeText = SUGAR.language.get("app_strings", "LBL_CLOSE_ACTIVITY_CONFIRM").replace("#module#", singleModule);
       SUGAR.util.closeActivityPanel.panel =
         new YAHOO.widget.SimpleDialog("closeActivityDialog",

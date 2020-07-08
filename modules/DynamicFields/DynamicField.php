@@ -5,7 +5,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2017 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -64,7 +64,7 @@ class DynamicField
         global $sugar_config;
         $this->module = (!empty($module)) ? $module : ((isset($_REQUEST['module']) && !empty($_REQUEST['module'])) ? $_REQUEST ['module'] : '');
         $this->base_path = "custom/Extension/modules/{$this->module}/Ext/Vardefs";
-        if(isset($sugar_config['dbconfig'])) {
+        if (isset($sugar_config['dbconfig'])) {
             $this->db = DBManagerFactory::getInstance();
         }
     }
@@ -317,7 +317,7 @@ class DynamicField
      *
      * @return array select=>select columns, join=>prebuilt join statement
      */
-    public function getJOIN($expandedList = false, $includeRelates = false, $where = false)
+    public function getJOIN($expandedList = false, $includeRelates = false, &$where = false)
     {
         if (!$this->bean->hasCustomFields()) {
             return array(
@@ -351,7 +351,7 @@ class DynamicField
                     $relateJoinInfo = $this->getRelateJoin($field, $jtAlias . $jtCount);
                     $select .= $relateJoinInfo['select'];
                     $join .= $relateJoinInfo['from'];
-                    //bug 27654 martin
+
                     if ($where) {
                         $pattern = '/' . $field['name'] . '\slike/i';
                         $replacement = $relateJoinInfo['name_field'] . ' like';
@@ -466,7 +466,7 @@ class DynamicField
                     if (in_array($field['type'], array('int', 'float', 'double', 'uint', 'ulong', 'long', 'short', 'tinyint', 'currency', 'decimal'))) {
                         $quote = '';
                         if (!isset($this->bean->$name) || !is_numeric($this->bean->$name)) {
-                            if ($field['required']) {
+                            if (!empty($field['required'])) {
                                 $this->bean->$name = 0;
                             } else {
                                 $this->bean->$name = 'NULL';
@@ -489,14 +489,14 @@ class DynamicField
                     }
                     if ($isUpdate) {
                         if ($first) {
-                            $query .= " $name=$quote" . $this->db->quote($val) . "$quote";
+                            $query .= " $name=$quote" . $this->db->quote($val) . (string)$quote;
                         } else {
-                            $query .= " ,$name=$quote" . $this->db->quote($val) . "$quote";
+                            $query .= " ,$name=$quote" . $this->db->quote($val) . (string)$quote;
                         }
                     }
                     $first = false;
                     $queryInsert .= " ,$name";
-                    $values .= " ,$quote" . $this->db->quote($val) . "$quote";
+                    $values .= " ,$quote" . $this->db->quote($val) . (string)$quote;
                 }
             }
             if ($isUpdate) {
@@ -603,7 +603,7 @@ class DynamicField
         $object_name = $this->module;
         $db_name = $field->name;
 
-        $fmd = new FieldsMetaData();
+        $fmd = BeanFactory::newBean('EditCustomFields');
         $id = $fmd->retrieve($object_name . $db_name, true, false);
         $is_update = false;
         $label = strtoupper($field->label);
@@ -750,7 +750,7 @@ class DynamicField
     {
         //Hack for the broken cases module
         $vBean = $bean_name == 'aCase' ? 'Case' : $bean_name;
-        $file_loc = "$this->base_path/sugarfield_{$field->name}.php";
+        $file_loc = "$this->base_path/_override_sugarfield_{$field->name}.php";
 
         $out = "<?php\n // created: " . date('Y-m-d H:i:s') . "\n";
         foreach ($def_override as $property => $val) {
@@ -764,7 +764,7 @@ class DynamicField
         }
 
         if ($fh = @sugar_fopen($file_loc, 'w')) {
-            fputs($fh, $out);
+            fwrite($fh, $out);
             fclose($fh);
 
             return true;

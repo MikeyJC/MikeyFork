@@ -5,7 +5,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2017 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -295,39 +295,6 @@
             <!--{/if}-->
         </table>
     </div>
-    <div id="layout">
-        <table class="edit view" border="0" cellpadding="0" cellspacing="1" width="100%">
-            <tbody>
-            <tr>
-                <th align="left" scope="row" colspan="4"><h4>{$MOD.LBL_LAYOUT_OPTIONS}</h4></th>
-            </tr>
-            <tr id="use_group_tabs_row" style="display: {$DISPLAY_GROUP_TAB};">
-                <td scope="row"><span>{$MOD.LBL_USE_GROUP_TABS}
-                        :</span>&nbsp;{sugar_help text=$MOD.LBL_NAVIGATION_PARADIGM_DESCRIPTION }</td>
-                <td colspan="3"><input name="use_group_tabs" type="hidden" value="m"><input id="use_group_tabs"
-                                                                                            type="checkbox"
-                                                                                            name="use_group_tabs" {$USE_GROUP_TABS}
-                                                                                            tabindex='12' value="gm">
-                </td>
-            </tr>
-            <tr>
-                <td colspan="4">
-                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td scope="row" align="left" style="padding-bottom: 2em;">{$TAB_CHOOSER}</td>
-                            <td width="90%" valign="top"><BR>&nbsp;</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-            <tr>
-                <td width="17%" scope="row"><span>{$MOD.LBL_SUBPANEL_TABS}
-                        :</span>&nbsp;{sugar_help text=$MOD.LBL_SUBPANEL_TABS_DESCRIPTION }</td>
-                <td width="83%" colspan="3"><input type="checkbox" name="user_subpanel_tabs" {$SUBPANEL_TABS}
-                                                   tabindex='13'></td>
-            </tr>
-        </table>
-    </div>
     <div id="locale" style="display:{$HIDE_FOR_GROUP_AND_PORTAL}">
         <table width="100%" border="0" cellspacing="1" cellpadding="0" class="edit view">
             <tr>
@@ -496,12 +463,97 @@
             </tr>
         </table>
     </div>
+    <div id="google_options" style="display:{$HIDE_IF_GAUTH_UNCONFIGURED}">
+        <table width="100%" border="0" cellspacing="1" cellpadding="0" class="edit view">
+            <tr>
+                <th align="left" scope="row" colspan="4"><h4>{$MOD.LBL_GOOGLE_API_SETTINGS}</h4></th>
+            </tr>
+            <tr>
+                <td width="17%" scope="row">
+                    <slot>{$MOD.LBL_GOOGLE_API_TOKEN}:</slot>&nbsp;{sugar_help text=$MOD.LBL_GOOGLE_API_TOKEN_HELP}
+                </td>
+                    <td width="20%">
+                    <slot>Current API Token is: <span style="color:{$GOOGLE_API_TOKEN_COLOR}">{$GOOGLE_API_TOKEN}</span> &nbsp;&nbsp;<input style="display:{$GOOGLE_API_TOKEN_ENABLE_NEW}" class="btn btn-primary btn-sm" id="google_gettoken" type="button" value="{$GOOGLE_API_TOKEN_BTN}" onclick="window.open('{$GOOGLE_API_TOKEN_NEW_URL}', '_self')" /></slot>
+                </td>
+                <td width="63%">
+                    <slot>&nbsp;</slot>
+                </td>
+            </tr>
+            <tr>
+                <td width="17%" scope="row">
+                    <slot>{$MOD.LBL_GSYNC_CAL}:</slot>
+                </td>
+                <td>
+                    <slot><input tabindex='12' name='gsync_cal' class="checkbox" type="checkbox" {$GSYNC_CAL}></slot>
+                </td>
+            </tr>
+        </table>
+    </div>
 </div>
 {if $ID}
     <div id="eapm_area" style='display:{$HIDE_FOR_GROUP_AND_PORTAL};' class="user-tab-content">
-        <div style="text-align:center; width: 100%">{sugar_image name="loading"}</div>
+        <div style="text-align:center; width: 100%">{sugar_getimage name="loading"}</div>
     </div>
 {/if}
+<div class="user-tab-content">
+    <div id="subthemes" style="display:{$HIDE_FOR_GROUP_AND_PORTAL}">
+        <table class="edit view" border="0" cellpadding="0" cellspacing="0" width="100%">
+            <tbody>
+                <tr>
+                    <th align="left" scope="row" colspan="4"><h4>{$MOD.LBL_LAYOUT_OPTIONS}</h4></th>
+                </tr>
+                {if $SUBTHEMES}
+                    <tr>
+                        <td>
+                            <span>{$MOD.LBL_SUBTHEME}:</span>
+                        </td>
+                        <td>
+                            {html_options name=subtheme options=$SUBTHEMES selected=$SUBTHEME}
+                        </td>
+                    <tr>
+                {/if}
+                <tr id="use_group_tabs_row" style="display: {$DISPLAY_GROUP_TAB};">
+                    <td scope="row"><span>{$MOD.LBL_USE_GROUP_TABS}
+                            :</span>&nbsp;{sugar_help text=$MOD.LBL_NAVIGATION_PARADIGM_DESCRIPTION }</td>
+                    <td colspan="3"><input name="use_group_tabs" type="hidden" value="m"><input id="use_group_tabs"
+                                                                                                type="checkbox"
+                                                                                                name="use_group_tabs" {$USE_GROUP_TABS}
+                                                                                                tabindex='12' value="gm">
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4">
+                        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                            <tr>
+                                <td scope="row" align="left" style="padding-bottom: 2em;">{$TAB_CHOOSER}</td>
+                                <td width="90%" valign="top"><BR>&nbsp;</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="17%" scope="row"><span>{$MOD.LBL_SORT_MODULES}
+                            :</span>&nbsp;{sugar_help text=$MOD.LBL_SORT_MODULES_DESCRIPTION }</td>
+                    <td width="83%" colspan="3">
+                        <input type="checkbox" name="sort_modules_by_name" {$SORT_MODULES_BY_NAME} tabindex='13'>
+                   </td>
+                </tr>
+                <tr>
+                    <td width="17%" scope="row"><span>{$MOD.LBL_SUBPANEL_TABS}
+                            :</span>&nbsp;{sugar_help text=$MOD.LBL_SUBPANEL_TABS_DESCRIPTION }</td>
+                    <td width="83%" colspan="3"><input type="checkbox" name="user_subpanel_tabs" {$SUBPANEL_TABS}
+                                                       tabindex='13'></td>
+                </tr>
+                <tr>
+                    <td width="17%" scope="row"><span>{$MOD.LBL_COUNT_COLLAPSED_SUBPANELS}
+                            :</span>&nbsp;{sugar_help text=$MOD.LBL_COUNT_COLLAPSED_SUBPANELS_DESCRIPTION }</td>
+                    <td width="83%" colspan="3"><input type="checkbox" name="user_count_collapsed_subpanels" {$COUNT_COLLAPSED_SUBPANELS}
+                                                       tabindex='13'></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 </div>
 
 <script type="text/javascript">
